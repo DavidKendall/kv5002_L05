@@ -211,7 +211,6 @@ int is_pressed(int button)
 {
     int ret;
     int rc;
-
     rc = sem_wait(&sem);
     assert(rc == 0);
     ret = wgetch(screen)==button;
@@ -219,3 +218,15 @@ int is_pressed(int button)
     assert(rc == 0);
     return ret;
 }
+
+int key_pressed(void) {
+    int ret;
+    int rc;
+    rc = sem_wait(&sem);
+    assert(rc == 0);
+    ret = wgetch(screen);
+    rc = sem_post(&sem);
+    assert(rc == 0);
+    return ret;
+}
+

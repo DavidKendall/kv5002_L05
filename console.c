@@ -160,3 +160,8 @@ int is_pressed(int button)
 {
     return wgetch(screen)==button;
 }
+
+int key_pressed(void) {
+    return wgetch(screen);
+}
+
