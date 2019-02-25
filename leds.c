@@ -19,6 +19,8 @@ enum {
 
 static bool flashing[2] = {false, false};
 static int  flashing_delay[2] = {FLASH_INITIAL_DELAY, FLASH_INITIAL_DELAY};
+static bool led_status_changed[2] = {false, false};
+static sem_t lcd_sem;
 
 void *led_toggle_thr(void *arg);
 void *keyboard_thr(void *arg);
@@ -31,6 +33,9 @@ int main (void) {
     unsigned long i;
 
     console_init();
+    
+    rc = sem_init(&lcd_sem, 0, 1);
+    assert(rc == 0);
 
     for (i = 0; i < 2; i += 1) {
         rc = pthread_create(&thread[i], NULL, led_toggle_thr, (void *)i);
@@ -47,10 +52,22 @@ int main (void) {
 
 void *led_toggle_thr(void *arg) {
     unsigned long id = (long)arg;
+    int rc;
+
     while (true) {
+        rc = sem_wait(&lcd_sem);
+        assert(rc == 0);
         if (flashing[id]) {
             led_toggle((leds_t)id);
         }
+        if (led_status_changed[id]) {
+            lcd_write_at(id ,0, "(LED%d) F:%s D:%07d", id, 
+                    (flashing[id] ? "ON " : "OFF"), 
+                     flashing_delay[id]);
+            led_status_changed[id] = false;
+        }
+        rc = sem_post(&lcd_sem);
+        assert(rc == 0);
         usleep(flashing_delay[id]);
     }
 }
@@ -60,26 +77,32 @@ void *keyboard_thr(void * arg) {
         switch (key_pressed()) {
             case KEY_LEFT: {
                 flashing[0] = !flashing[0];
+                led_status_changed[0] = true;
                 break;
             }
             case KEY_RIGHT: { 
                 flashing[1] = !flashing[1];
+                led_status_changed[1] = true;
                 break;
             }
             case KEY_UP: { 
                 dec_delay(0);
+                led_status_changed[0] = true;
                 break;
             }
             case KEY_DOWN: {
                 inc_delay(0);
+                led_status_changed[0] = true;
                 break;
             }
             case KEY_PPAGE: {
                 dec_delay(1);
+                led_status_changed[1] = true;
                 break;
             }
             case KEY_NPAGE: {
                 inc_delay(1);
+                led_status_changed[1] = true;
                 break;
             }
             default: {
