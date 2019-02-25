@@ -1,6 +1,3 @@
-#ifndef _CONSOLE_H
-#define _CONSOLE_H
-
 /* some constants */
 #include <curses.h>
 
@@ -34,6 +31,3 @@ void led_toggle(leds_t led);
 
 /* Button api */
 int is_pressed(int button);
-
-#endif
-
